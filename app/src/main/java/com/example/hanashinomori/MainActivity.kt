@@ -17,6 +17,7 @@ import com.example.hanashinomori.view.HomeScreen
 import com.example.hanashinomori.view.LibraryScreen
 import com.example.hanashinomori.view.LoginScreen
 import com.example.hanashinomori.view.RegisterScreen
+import com.example.hanashinomori.view.QrScannerScreen
 
 class MainActivity : ComponentActivity() {
 
@@ -52,6 +53,7 @@ fun AppNavigation(
 ) {
     val navController = rememberNavController()
     var currentUsername by remember { mutableStateOf("") }
+    var scannedQrValue by remember { mutableStateOf("") }
 
     NavHost(
         navController = navController,
@@ -105,6 +107,22 @@ fun AppNavigation(
             LibraryScreen(
                 mediaViewModel = mediaViewModel,
                 onNavigateBack = {
+                    navController.popBackStack()
+                },
+                onNavigateToQrScanner = {
+                    navController.navigate("qr_scanner")
+                },
+                scannedQrValue = scannedQrValue
+            )
+        }
+
+        composable("qr_scanner") {
+            QrScannerScreen(
+                onQrScanned = { qrValue ->
+                    scannedQrValue = qrValue
+                    navController.popBackStack()
+                },
+                onClose = {
                     navController.popBackStack()
                 }
             )

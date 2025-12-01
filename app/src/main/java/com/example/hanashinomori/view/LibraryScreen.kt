@@ -23,9 +23,19 @@ import com.example.hanashinomori.entity.MediaItem
 @Composable
 fun LibraryScreen(
     mediaViewModel: MediaViewModel,
-    onNavigateBack: () -> Unit
+    onNavigateBack: () -> Unit,
+    onNavigateToQrScanner: () -> Unit,
+    scannedQrValue: String
 ) {
     val myLibrary by mediaViewModel.myLibrary.collectAsState()
+    var showQrResult by remember { mutableStateOf(false) }
+
+    // Mostrar resultado cuando hay un nuevo valor escaneado
+    LaunchedEffect(scannedQrValue) {
+        if (scannedQrValue.isNotEmpty()) {
+            showQrResult = true
+        }
+    }
 
     Scaffold(
         topBar = {
@@ -40,6 +50,17 @@ fun LibraryScreen(
                     containerColor = MaterialTheme.colorScheme.primaryContainer
                 )
             )
+        },
+        floatingActionButton = {
+            FloatingActionButton(
+                onClick = onNavigateToQrScanner,
+                containerColor = MaterialTheme.colorScheme.primary
+            ) {
+                Icon(
+                    imageVector = Icons.Default.Search,
+                    contentDescription = "Escanear QR"
+                )
+            }
         }
     ) { padding ->
         if (myLibrary.isEmpty()) {
@@ -98,6 +119,30 @@ fun LibraryScreen(
                     )
                 }
             }
+        }
+
+        // Diálogo para mostrar resultado del QR
+        if (showQrResult && scannedQrValue.isNotEmpty()) {
+            AlertDialog(
+                onDismissRequest = { showQrResult = false },
+                title = { Text("QR Escaneado") },
+                text = {
+                    Column {
+                        Text("Contenido del QR:")
+                        Spacer(modifier = Modifier.height(8.dp))
+                        Text(
+                            text = scannedQrValue,
+                            fontWeight = FontWeight.Bold,
+                            color = MaterialTheme.colorScheme.primary
+                        )
+                    }
+                },
+                confirmButton = {
+                    TextButton(onClick = { showQrResult = false }) {
+                        Text("Cerrar")
+                    }
+                }
+            )
         }
     }
 }
