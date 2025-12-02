@@ -1,0 +1,286 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Códigos QR - HanashiNoMori</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            max-width: 1200px;
+            margin: 0 auto;
+            padding: 20px;
+            background: #f5f5f5;
+        }
+        h1 {
+            text-align: center;
+            color: #333;
+            margin-bottom: 10px;
+        }
+        .subtitle {
+            text-align: center;
+            color: #666;
+            margin-bottom: 30px;
+        }
+        .qr-container {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+            gap: 20px;
+            margin-bottom: 40px;
+        }
+        .qr-card {
+            background: white;
+            padding: 20px;
+            border-radius: 10px;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+            text-align: center;
+        }
+        .qr-card h3 {
+            margin: 0 0 10px 0;
+            color: #333;
+            font-size: 16px;
+        }
+        .qr-card p {
+            margin: 5px 0;
+            color: #666;
+            font-size: 14px;
+        }
+        .qr-code {
+            margin: 15px 0;
+            font-family: monospace;
+            font-size: 18px;
+            color: #007bff;
+            background: #f0f0f0;
+            padding: 10px;
+            border-radius: 5px;
+            font-weight: bold;
+        }
+        .category {
+            display: inline-block;
+            padding: 5px 10px;
+            border-radius: 15px;
+            font-size: 12px;
+            font-weight: bold;
+            margin-top: 10px;
+        }
+        .manga {
+            background: #ffebee;
+            color: #c62828;
+        }
+        .manhwa {
+            background: #e3f2fd;
+            color: #1565c0;
+        }
+        .donghua {
+            background: #f3e5f5;
+            color: #6a1b9a;
+        }
+        .instructions {
+            background: white;
+            padding: 20px;
+            border-radius: 10px;
+            margin-bottom: 20px;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+        }
+        .instructions h2 {
+            color: #333;
+            margin-top: 0;
+        }
+        .instructions ol {
+            padding-left: 20px;
+        }
+        .instructions li {
+            margin-bottom: 10px;
+            color: #666;
+        }
+        .note {
+            background: #fff3cd;
+            border-left: 4px solid #ffc107;
+            padding: 15px;
+            margin: 20px 0;
+            border-radius: 5px;
+        }
+        @media print {
+            body {
+                background: white;
+            }
+            .instructions {
+                page-break-after: always;
+            }
+        }
+    </style>
+</head>
+<body>
+    <h1>📱 Códigos QR para HanashiNoMori</h1>
+    <p class="subtitle">Escanea estos códigos con la app para agregar libros a tu biblioteca</p>
+
+    <div class="instructions">
+        <h2>📋 Instrucciones de Uso</h2>
+        <ol>
+            <li>Abre la app <strong>HanashiNoMori</strong></li>
+            <li>Inicia sesión con tu cuenta</li>
+            <li>Ve a <strong>"Mi Biblioteca"</strong></li>
+            <li>Presiona el <strong>botón flotante</strong> (icono de cámara)</li>
+            <li>Apunta la cámara a cualquiera de estos códigos QR</li>
+            <li>El libro se agregará automáticamente a tus favoritos</li>
+        </ol>
+
+        <div class="note">
+            <strong>⚠️ Nota:</strong> Estos códigos QR solo funcionan si has cargado el archivo <code>data_init.sql</code> en tu base de datos.
+            Si no lo has hecho, ejecuta el script en MySQL Workbench primero.
+        </div>
+    </div>
+
+    <h2 style="color: #c62828;">📚 MANGA</h2>
+    <div class="qr-container">
+        <div class="qr-card">
+            <h3>Naruto</h3>
+            <p>Masashi Kishimoto</p>
+            <div class="qr-code">BOOK:46</div>
+            <p style="font-size: 12px; color: #999;">Copia este texto en<br>qr-code-generator.com</p>
+            <span class="category manga">Manga</span>
+        </div>
+
+        <div class="qr-card">
+            <h3>One Piece</h3>
+            <p>Eiichiro Oda</p>
+            <div class="qr-code">BOOK:47</div>
+            <p style="font-size: 12px; color: #999;">Copia este texto en<br>qr-code-generator.com</p>
+            <span class="category manga">Manga</span>
+        </div>
+
+        <div class="qr-card">
+            <h3>Attack on Titan</h3>
+            <p>Hajime Isayama</p>
+            <div class="qr-code">BOOK:48</div>
+            <p style="font-size: 12px; color: #999;">Copia este texto en<br>qr-code-generator.com</p>
+            <span class="category manga">Manga</span>
+        </div>
+
+        <div class="qr-card">
+            <h3>Death Note</h3>
+            <p>Tsugumi Ohba</p>
+            <div class="qr-code">BOOK:49</div>
+            <p style="font-size: 12px; color: #999;">Copia este texto en<br>qr-code-generator.com</p>
+            <span class="category manga">Manga</span>
+        </div>
+
+        <div class="qr-card">
+            <h3>My Hero Academia</h3>
+            <p>Kohei Horikoshi</p>
+            <div class="qr-code">BOOK:50</div>
+            <p style="font-size: 12px; color: #999;">Copia este texto en<br>qr-code-generator.com</p>
+            <span class="category manga">Manga</span>
+        </div>
+    </div>
+
+    <h2 style="color: #1565c0;">📘 MANHWA</h2>
+    <div class="qr-container">
+        <div class="qr-card">
+            <h3>Solo Leveling</h3>
+            <p>Chugong</p>
+            <div class="qr-code">BOOK:56</div>
+            <p style="font-size: 12px; color: #999;">Copia este texto en<br>qr-code-generator.com</p>
+            <span class="category manhwa">Manhwa</span>
+        </div>
+
+        <div class="qr-card">
+            <h3>Tower of God</h3>
+            <p>SIU</p>
+            <div class="qr-code">BOOK:57</div>
+            <p style="font-size: 12px; color: #999;">Copia este texto en<br>qr-code-generator.com</p>
+            <span class="category manhwa">Manhwa</span>
+        </div>
+
+        <div class="qr-card">
+            <h3>The Beginning After The End</h3>
+            <p>TurtleMe</p>
+            <div class="qr-code">BOOK:58</div>
+            <p style="font-size: 12px; color: #999;">Copia este texto en<br>qr-code-generator.com</p>
+            <span class="category manhwa">Manhwa</span>
+        </div>
+
+        <div class="qr-card">
+            <h3>Omniscient Reader</h3>
+            <p>Sing Shong</p>
+            <div class="qr-code">BOOK:59</div>
+            <p style="font-size: 12px; color: #999;">Copia este texto en<br>qr-code-generator.com</p>
+            <span class="category manhwa">Manhwa</span>
+        </div>
+
+        <div class="qr-card">
+            <h3>Noblesse</h3>
+            <p>Son Jeho</p>
+            <div class="qr-code">BOOK:60</div>
+            <p style="font-size: 12px; color: #999;">Copia este texto en<br>qr-code-generator.com</p>
+            <span class="category manhwa">Manhwa</span>
+        </div>
+    </div>
+
+    <h2 style="color: #6a1b9a;">🎬 DONGHUA</h2>
+    <div class="qr-container">
+        <div class="qr-card">
+            <h3>Mo Dao Zu Shi</h3>
+            <p>Mo Xiang Tong Xiu</p>
+            <div class="qr-code">BOOK:66</div>
+            <p style="font-size: 12px; color: #999;">Copia este texto en<br>qr-code-generator.com</p>
+            <span class="category donghua">Donghua</span>
+        </div>
+
+        <div class="qr-card">
+            <h3>Heaven Officials Blessing</h3>
+            <p>Mo Xiang Tong Xiu</p>
+            <div class="qr-code">BOOK:67</div>
+            <p style="font-size: 12px; color: #999;">Copia este texto en<br>qr-code-generator.com</p>
+            <span class="category donghua">Donghua</span>
+        </div>
+
+        <div class="qr-card">
+            <h3>The Kings Avatar</h3>
+            <p>Butterfly Blue</p>
+            <div class="qr-code">BOOK:68</div>
+            <p style="font-size: 12px; color: #999;">Copia este texto en<br>qr-code-generator.com</p>
+            <span class="category donghua">Donghua</span>
+        </div>
+
+        <div class="qr-card">
+            <h3>Link Click</h3>
+            <p>Li Haoling</p>
+            <div class="qr-code">BOOK:70</div>
+            <p style="font-size: 12px; color: #999;">Copia este texto en<br>qr-code-generator.com</p>
+            <span class="category donghua">Donghua</span>
+        </div>
+
+        <div class="qr-card">
+            <h3>Soul Land</h3>
+            <p>Tang Jia San Shao</p>
+            <div class="qr-code">BOOK:72</div>
+            <p style="font-size: 12px; color: #999;">Copia este texto en<br>qr-code-generator.com</p>
+            <span class="category donghua">Donghua</span>
+        </div>
+    </div>
+
+    <div class="note" style="margin-top: 40px;">
+        <h3 style="margin-top: 0;">🔗 Cómo generar los QR:</h3>
+        <ol>
+            <li>Ve a <strong>https://www.qr-code-generator.com/</strong></li>
+            <li>Selecciona <strong>"Text"</strong></li>
+            <li>Copia el código (ejemplo: <code>BOOK:56</code>)</li>
+            <li>Pégalo en el campo de texto</li>
+            <li>Click en <strong>"Create QR Code"</strong></li>
+            <li>Descarga la imagen</li>
+            <li>Imprímela o muéstrala en pantalla</li>
+        </ol>
+    </div>
+
+    <div style="text-align: center; margin-top: 40px; padding: 20px; background: white; border-radius: 10px;">
+        <h3>✅ Sistema Completamente Funcional</h3>
+        <p style="color: #666;">
+            Fecha: 2 de Diciembre de 2025<br>
+            Proyecto: HanashiNoMori<br>
+            Estado: 🎉 100% Operativo
+        </p>
+    </div>
+</body>
+</html>
+

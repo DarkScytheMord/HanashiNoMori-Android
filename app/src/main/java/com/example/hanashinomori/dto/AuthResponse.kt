@@ -17,7 +17,7 @@ data class AuthResponse(
 
 // Datos del usuario dentro de "data"
 data class UserData(
-    @SerializedName("id")
+    @SerializedName("userId")  // Backend devuelve "userId", no "id"
     val userId: Long? = null,
     val username: String? = null,
     val email: String? = null,

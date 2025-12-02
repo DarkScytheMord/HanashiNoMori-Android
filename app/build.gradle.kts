@@ -2,7 +2,7 @@ plugins {
     alias(libs.plugins.android.application)
     alias(libs.plugins.kotlin.android)
     alias(libs.plugins.kotlin.compose)
-    alias(libs.plugins.ksp)         // PLUGINS BUILD.GRADLE.KTS
+    // alias(libs.plugins.ksp)         // PLUGINS BUILD.GRADLE.KTS - Ya no se usa (sin Room)
 }
 
 android {
@@ -49,8 +49,9 @@ dependencies {
     implementation(libs.androidx.ui.graphics)
     implementation(libs.androidx.ui.tooling.preview)
     implementation(libs.androidx.material3)
-    implementation(libs.androidx.room.common.jvm)
-    implementation(libs.room.ktx)
+    // Room ya no se usa - App 100% dependiente del backend
+    // implementation(libs.androidx.room.common.jvm)
+    // implementation(libs.room.ktx)
     testImplementation(libs.junit)
     androidTestImplementation(libs.androidx.junit)
     androidTestImplementation(libs.androidx.espresso.core)
@@ -58,7 +59,7 @@ dependencies {
     androidTestImplementation(libs.androidx.ui.test.junit4)
     debugImplementation(libs.androidx.ui.tooling)
     debugImplementation(libs.androidx.ui.test.manifest)
-    ksp(libs.androidx.room.compiler)                // DEPENDENCIES EN BUILD.GRANDE.KTS
+    // ksp(libs.androidx.room.compiler)                // DEPENDENCIES EN BUILD.GRANDE.KTS - Ya no se usa
     implementation(libs.androidx.lifecycle.viewmodel.compose)   // DEPENDENCIES EN BUILD.GRANDE.KTS
     implementation(libs.androidx.lifecycle.runtime.ktx)         // DEPENDENCIES EN BUILD.GRANDE.KTS
 
@@ -78,6 +79,8 @@ dependencies {
     implementation("androidx.camera:camera-camera2:1.3.4")
     implementation("androidx.camera:camera-lifecycle:1.3.4")
     implementation("androidx.camera:camera-view:1.3.4")
-// ML Kit Barcode Scanning (QR incluido)
+    // ML Kit Barcode Scanning (QR incluido)
     implementation("com.google.mlkit:barcode-scanning:17.2.0")
+    // Coil para cargar imágenes desde URL
+    implementation("io.coil-kt:coil-compose:2.5.0")
 }

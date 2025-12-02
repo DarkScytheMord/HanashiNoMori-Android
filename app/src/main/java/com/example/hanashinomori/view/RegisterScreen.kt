@@ -16,7 +16,7 @@ import com.example.hanashinomori.model.AuthState
 
 @Composable
 fun RegisterScreen(
-    authViewModel: AuthViewModel,
+    authViewModel: com.example.hanashinomori.controller.AuthViewModel,
     onNavigateBack: () -> Unit,
     onRegisterSuccess: () -> Unit
 ) {
@@ -29,7 +29,7 @@ fun RegisterScreen(
     var showSuccessDialog by remember { mutableStateOf(false) }
 
     LaunchedEffect(authState) {
-        if (authState is AuthState.Success) {
+        if (authState is AuthState.Authenticated) {
             showSuccessDialog = true
         }
     }
@@ -42,7 +42,7 @@ fun RegisterScreen(
             confirmButton = {
                 TextButton(onClick = {
                     showSuccessDialog = false
-                    authViewModel.resetState()
+                    authViewModel.clearError()
                     onRegisterSuccess()
                 }) {
                     Text("Aceptar")

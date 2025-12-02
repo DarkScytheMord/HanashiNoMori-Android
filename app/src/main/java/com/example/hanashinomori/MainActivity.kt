@@ -9,10 +9,8 @@ import androidx.navigation.compose.NavHost
 import androidx.navigation.compose.composable
 import androidx.navigation.compose.rememberNavController
 import com.example.hanashinomori.controller.AuthViewModel
-import com.example.hanashinomori.controller.MediaViewModel
-import com.example.hanashinomori.db.AppDatabase
-import com.example.hanashinomori.repository.AuthRepository
-import com.example.hanashinomori.repository.MediaRepository
+import com.example.hanashinomori.controller.BookViewModel
+import com.example.hanashinomori.view.BookDetailScreen
 import com.example.hanashinomori.view.HomeScreen
 import com.example.hanashinomori.view.LibraryScreen
 import com.example.hanashinomori.view.LoginScreen
@@ -21,26 +19,19 @@ import com.example.hanashinomori.view.QrScannerScreen
 
 class MainActivity : ComponentActivity() {
 
-    private lateinit var  authViewModel: AuthViewModel
-    private lateinit var mediaViewModel: MediaViewModel
+    private lateinit var authViewModel: AuthViewModel
+    private lateinit var bookViewModel: BookViewModel
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
 
-        // Inicializar Database
-        val database = AppDatabase.getDatabase(applicationContext)
-
-        // Inicializar Repositories
-        val authRepository = AuthRepository(database.userDao())
-        val mediaRepository = MediaRepository(database.mediaItemDao())
-
-        // Inicializar ViewModels
-        authViewModel = AuthViewModel(authRepository)
-        mediaViewModel = MediaViewModel(mediaRepository)
+        // Inicializar ViewModels (sin base de datos local)
+        authViewModel = AuthViewModel()
+        bookViewModel = BookViewModel()
 
         setContent {
             MaterialTheme {
-                AppNavigation(authViewModel, mediaViewModel)
+                AppNavigation(authViewModel, bookViewModel)
             }
         }
     }
@@ -49,10 +40,10 @@ class MainActivity : ComponentActivity() {
 @Composable
 fun AppNavigation(
     authViewModel: AuthViewModel,
-    mediaViewModel: MediaViewModel
+    bookViewModel: BookViewModel
 ) {
     val navController = rememberNavController()
-    var currentUsername by remember { mutableStateOf("") }
+    val currentUser by authViewModel.currentUser.collectAsState()
     var scannedQrValue by remember { mutableStateOf("") }
 
     NavHost(
@@ -65,8 +56,9 @@ fun AppNavigation(
                 onNavigateToRegister = {
                     navController.navigate("register")
                 },
-                onLoginSuccess = { username ->
-                    currentUsername = username
+                onLoginSuccess = { userId ->
+                    // Configurar userId en bookViewModel
+                    bookViewModel.setUserId(userId)
                     navController.navigate("home") {
                         popUpTo("login") { inclusive = true }
                     }
@@ -88,14 +80,16 @@ fun AppNavigation(
 
         composable("home") {
             HomeScreen(
-                username = currentUsername,
-                mediaViewModel = mediaViewModel,
+                username = currentUser?.username ?: "",
+                bookViewModel = bookViewModel,
                 onNavigateToLibrary = {
                     navController.navigate("library")
                 },
+                onNavigateToBookDetail = { bookId ->
+                    navController.navigate("book_detail/$bookId")
+                },
                 onLogout = {
                     authViewModel.logout()
-                    currentUsername = ""
                     navController.navigate("login") {
                         popUpTo("home") { inclusive = true }
                     }
@@ -105,15 +99,31 @@ fun AppNavigation(
 
         composable("library") {
             LibraryScreen(
-                mediaViewModel = mediaViewModel,
+                bookViewModel = bookViewModel,
                 onNavigateBack = {
                     navController.popBackStack()
                 },
                 onNavigateToQrScanner = {
                     navController.navigate("qr_scanner")
                 },
+                onNavigateToBookDetail = { bookId ->
+                    navController.navigate("book_detail/$bookId")
+                },
                 scannedQrValue = scannedQrValue
             )
+        }
+
+        composable("book_detail/{bookId}") { backStackEntry ->
+            val bookId = backStackEntry.arguments?.getString("bookId")?.toLongOrNull()
+            if (bookId != null) {
+                BookDetailScreen(
+                    bookId = bookId,
+                    viewModel = bookViewModel,
+                    onBack = {
+                        navController.popBackStack()
+                    }
+                )
+            }
         }
 
         composable("qr_scanner") {

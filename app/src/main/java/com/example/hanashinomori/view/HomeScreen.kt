@@ -1,12 +1,13 @@
 package com.example.hanashinomori.view
 
 import androidx.compose.foundation.background
+import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.LazyRow
 import androidx.compose.foundation.lazy.items
 import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.automirrored.filled.List
+import androidx.compose.material.icons.automirrored.filled.ExitToApp
 import androidx.compose.material.icons.filled.*
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
@@ -16,332 +17,324 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
-import com.example.hanashinomori.controller.MediaViewModel
-import com.example.hanashinomori.entity.MediaItem
+import com.example.hanashinomori.controller.BookViewModel
+import com.example.hanashinomori.model.Book
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun HomeScreen(
     username: String,
-    mediaViewModel: MediaViewModel,
+    bookViewModel: BookViewModel,
     onNavigateToLibrary: () -> Unit,
+    onNavigateToBookDetail: (Long) -> Unit,
     onLogout: () -> Unit
 ) {
-    val allMedia by mediaViewModel.allMedia.collectAsState()
-    var showAddDialog by remember { mutableStateOf(false) }
+    val allBooks by bookViewModel.allBooks.collectAsState()
+    val favoriteBooks by bookViewModel.favoriteBooks.collectAsState()
+    val isLoading by bookViewModel.isLoading.collectAsState()
+    val errorMessage by bookViewModel.errorMessage.collectAsState()
+    val searchQuery by bookViewModel.searchQuery.collectAsState()
+    val searchResults by bookViewModel.searchResults.collectAsState()
 
-    val libros = remember(allMedia) { allMedia.filter { it.category == "Libro" } }
-    val mangas = remember(allMedia) { allMedia.filter { it.category == "Manga" } }
-    val manhwas = remember(allMedia) { allMedia.filter { it.category == "Manhwa" } }
-    val donghuas = remember(allMedia) { allMedia.filter { it.category == "Donghua" } }
+    var selectedCategory by remember { mutableStateOf("Todos") }
+    val categories = listOf("Todos", "Manga", "Manhwa", "Donghua")
+    var isSearching by remember { mutableStateOf(false) }
+
+    // Cargar libros al inicio
+    LaunchedEffect(Unit) {
+        bookViewModel.loadAllBooks()
+    }
+
+    // Filtrar libros por categoría
+    LaunchedEffect(selectedCategory) {
+        if (selectedCategory == "Todos") {
+            bookViewModel.loadAllBooks()
+        } else {
+            bookViewModel.loadBooksByCategory(selectedCategory)
+        }
+    }
 
     Scaffold(
         topBar = {
             TopAppBar(
-                title = {
-                    Column {
-                        Text("HanashiNoMori", fontWeight = FontWeight.Bold)
-                        Text(
-                            "Hola, $username",
-                            fontSize = 12.sp,
-                            color = MaterialTheme.colorScheme.onSurfaceVariant
-                        )
-                    }
-                },
+                title = { Text("Hanashi No Mori") },
                 actions = {
                     IconButton(onClick = onNavigateToLibrary) {
-                        Icon(Icons.AutoMirrored.Filled.List, "Mi Biblioteca")
+                        Icon(Icons.Default.Favorite, "Mi Biblioteca")
                     }
                     IconButton(onClick = onLogout) {
-                        Icon(Icons.Default.ExitToApp, "Cerrar sesión")
+                        Icon(Icons.AutoMirrored.Filled.ExitToApp, "Cerrar Sesión")
                     }
                 },
                 colors = TopAppBarDefaults.topAppBarColors(
                     containerColor = MaterialTheme.colorScheme.primaryContainer
                 )
             )
-        },
-        floatingActionButton = {
-            FloatingActionButton(
-                onClick = { showAddDialog = true }
-            ) {
-                Icon(Icons.Default.Add, "Agregar elemento")
-            }
         }
     ) { padding ->
-        LazyColumn(
-            modifier = Modifier
-                .fillMaxSize()
-                .padding(padding)
-                .padding(vertical = 16.dp),
-            verticalArrangement = Arrangement.spacedBy(24.dp)
-        ) {
-            item {
-                Column(modifier = Modifier.padding(horizontal = 16.dp)) {
-                    Text(
-                        "Bienvenido a tu biblioteca digital",
-                        fontSize = 24.sp,
-                        fontWeight = FontWeight.Bold
-                    )
-                    Spacer(modifier = Modifier.height(4.dp))
-                    Text(
-                        "Explora nuestra colección de libros, mangas, manhwas y donghuas",
-                        fontSize = 14.sp,
-                        color = MaterialTheme.colorScheme.onSurfaceVariant
-                    )
-                }
-            }
-
-            item {
-                CategorySection(
-                    title = "📚 Libros",
-                    items = libros,
-                    onToggleLibrary = { item -> mediaViewModel.toggleLibrary(item) }
-                )
-            }
-
-            item {
-                CategorySection(
-                    title = "🎌 Mangas",
-                    items = mangas,
-                    onToggleLibrary = { item -> mediaViewModel.toggleLibrary(item) }
-                )
-            }
-
-            item {
-                CategorySection(
-                    title = "🇰🇷 Manhwas",
-                    items = manhwas,
-                    onToggleLibrary = { item -> mediaViewModel.toggleLibrary(item) }
-                )
-            }
-
-            item {
-                CategorySection(
-                    title = "🇨🇳 Donghuas",
-                    items = donghuas,
-                    onToggleLibrary = { item -> mediaViewModel.toggleLibrary(item) }
-                )
-            }
-        }
-
-        if (showAddDialog) {
-            AddMediaDialog(
-                onDismiss = { showAddDialog = false },
-                onConfirm = { title, author, category ->
-                    mediaViewModel.addCustomMedia(title, author, category)
-                    showAddDialog = false
-                }
-            )
-        }
-    }
-}
-
-@Composable
-fun CategorySection(
-    title: String,
-    items: List<MediaItem>,
-    onToggleLibrary: (MediaItem) -> Unit
-) {
-    Column {
-        Text(
-            text = title,
-            fontSize = 20.sp,
-            fontWeight = FontWeight.Bold,
-            modifier = Modifier.padding(horizontal = 16.dp)
-        )
-
-        Spacer(modifier = Modifier.height(12.dp))
-
-        if (items.isEmpty()) {
-            Text(
-                text = "No hay elementos en esta categoría",
-                modifier = Modifier.padding(horizontal = 16.dp),
-                color = MaterialTheme.colorScheme.onSurfaceVariant,
-                fontSize = 14.sp
-            )
-        } else {
-            LazyRow(
-                contentPadding = PaddingValues(horizontal = 16.dp),
-                horizontalArrangement = Arrangement.spacedBy(12.dp)
-            ) {
-                items(items) { item ->
-                    MediaCard(
-                        mediaItem = item,
-                        onToggleLibrary = { onToggleLibrary(item) }
-                    )
-                }
-            }
-        }
-    }
-}
-
-@Composable
-fun MediaCard(
-    mediaItem: MediaItem,
-    onToggleLibrary: () -> Unit
-) {
-    Card(
-        modifier = Modifier
-            .width(150.dp)
-            .height(220.dp),
-        elevation = CardDefaults.cardElevation(defaultElevation = 4.dp)
-    ) {
         Column(
             modifier = Modifier
                 .fillMaxSize()
-                .padding(12.dp),
-            verticalArrangement = Arrangement.SpaceBetween
+                .padding(padding)
         ) {
-            Column {
-                Box(
-                    modifier = Modifier
-                        .fillMaxWidth()
-                        .height(100.dp)
-                        .background(
-                            MaterialTheme.colorScheme.primaryContainer,
-                            shape = MaterialTheme.shapes.medium
-                        ),
-                    contentAlignment = Alignment.Center
+            // Header con saludo
+            Card(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .padding(16.dp),
+                colors = CardDefaults.cardColors(
+                    containerColor = MaterialTheme.colorScheme.primary
+                )
+            ) {
+                Column(
+                    modifier = Modifier.padding(20.dp)
                 ) {
-                    Icon(
-                        imageVector = when (mediaItem.category) {
-                            "Manga" -> Icons.Default.Place
-                            "Manhwa" -> Icons.Default.Edit
-                            "Donghua" -> Icons.Default.Star
-                            else -> Icons.Default.Info
-                        },
-                        contentDescription = null,
-                        modifier = Modifier.size(48.dp),
-                        tint = MaterialTheme.colorScheme.primary
+                    Text(
+                        "¡Hola, $username!",
+                        fontSize = 24.sp,
+                        fontWeight = FontWeight.Bold,
+                        color = MaterialTheme.colorScheme.onPrimary
+                    )
+                    Spacer(modifier = Modifier.height(4.dp))
+                    Text(
+                        "Explora nuestra colección",
+                        fontSize = 14.sp,
+                        color = MaterialTheme.colorScheme.onPrimary.copy(alpha = 0.8f)
                     )
                 }
-
-                Spacer(modifier = Modifier.height(8.dp))
-
-                Text(
-                    text = mediaItem.title,
-                    fontWeight = FontWeight.Bold,
-                    fontSize = 14.sp,
-                    maxLines = 2
-                )
-
-                Text(
-                    text = mediaItem.author,
-                    fontSize = 12.sp,
-                    color = MaterialTheme.colorScheme.onSurfaceVariant,
-                    maxLines = 1
-                )
             }
 
-            IconButton(
-                onClick = onToggleLibrary,
-                modifier = Modifier.align(Alignment.End)
+            // Barra de búsqueda
+            OutlinedTextField(
+                value = searchQuery,
+                onValueChange = {
+                    bookViewModel.updateSearchQuery(it)
+                    isSearching = it.isNotEmpty()
+                },
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .padding(horizontal = 16.dp),
+                placeholder = { Text("Buscar libros por título...") },
+                leadingIcon = {
+                    Icon(Icons.Default.Search, contentDescription = "Buscar")
+                },
+                trailingIcon = {
+                    if (searchQuery.isNotEmpty()) {
+                        IconButton(onClick = {
+                            bookViewModel.clearSearch()
+                            isSearching = false
+                        }) {
+                            Icon(Icons.Default.Close, contentDescription = "Limpiar")
+                        }
+                    }
+                },
+                singleLine = true
+            )
+
+            Spacer(modifier = Modifier.height(16.dp))
+
+            // Filtros de categoría
+            LazyRow(
+                modifier = Modifier.padding(horizontal = 16.dp),
+                horizontalArrangement = Arrangement.spacedBy(8.dp)
             ) {
-                Icon(
-                    imageVector = if (mediaItem.isInLibrary)
-                        Icons.Default.Favorite
-                    else
-                        Icons.Default.FavoriteBorder,
-                    contentDescription = if (mediaItem.isInLibrary)
-                        "Quitar de biblioteca"
-                    else
-                        "Agregar a biblioteca",
-                    tint = if (mediaItem.isInLibrary)
-                        Color.Red
-                    else
-                        MaterialTheme.colorScheme.onSurface
-                )
-            }
-        }
-    }
-}
-
-@Composable
-fun AddMediaDialog(
-    onDismiss: () -> Unit,
-    onConfirm: (title: String, author: String, category: String) -> Unit
-) {
-    var title by remember { mutableStateOf("") }
-    var author by remember { mutableStateOf("") }
-    var selectedCategory by remember { mutableStateOf("Libro") }
-    var expanded by remember { mutableStateOf(false) }
-
-    val categories = listOf("Libro", "Manga", "Manhwa", "Donghua")
-
-    AlertDialog(
-        onDismissRequest = onDismiss,
-        title = { Text("Agregar a mi biblioteca") },
-        text = {
-            Column(
-                verticalArrangement = Arrangement.spacedBy(12.dp)
-            ) {
-                OutlinedTextField(
-                    value = title,
-                    onValueChange = { title = it },
-                    label = { Text("Título") },
-                    singleLine = true,
-                    modifier = Modifier.fillMaxWidth()
-                )
-
-                OutlinedTextField(
-                    value = author,
-                    onValueChange = { author = it },
-                    label = { Text("Autor") },
-                    singleLine = true,
-                    modifier = Modifier.fillMaxWidth()
-                )
-
-                Box {
-                    OutlinedTextField(
-                        value = selectedCategory,
-                        onValueChange = { },
-                        label = { Text("Categoría") },
-                        readOnly = true,
-                        trailingIcon = {
-                            IconButton(onClick = { expanded = !expanded }) {
-                                Icon(
-                                    imageVector = if (expanded) Icons.Default.KeyboardArrowUp else Icons.Default.KeyboardArrowDown,
-                                    contentDescription = "Expandir"
-                                )
-                            }
-                        },
-                        modifier = Modifier.fillMaxWidth()
+                items(categories) { category ->
+                    FilterChip(
+                        selected = selectedCategory == category,
+                        onClick = { selectedCategory = category },
+                        label = { Text(category) },
+                        leadingIcon = if (selectedCategory == category) {
+                            { Icon(Icons.Default.Check, null, modifier = Modifier.size(18.dp)) }
+                        } else null
                     )
+                }
+            }
 
-                    DropdownMenu(
-                        expanded = expanded,
-                        onDismissRequest = { expanded = false }
+            Spacer(modifier = Modifier.height(16.dp))
+
+            // Estado de carga
+            if (isLoading) {
+                Box(
+                    modifier = Modifier.fillMaxSize(),
+                    contentAlignment = Alignment.Center
+                ) {
+                    CircularProgressIndicator()
+                }
+            }
+            // Mensaje de error
+            else if (errorMessage != null) {
+                Column(
+                    modifier = Modifier
+                        .fillMaxSize()
+                        .padding(32.dp),
+                    horizontalAlignment = Alignment.CenterHorizontally,
+                    verticalArrangement = Arrangement.Center
+                ) {
+                    Icon(
+                        Icons.Default.Warning,
+                        contentDescription = null,
+                        modifier = Modifier.size(64.dp),
+                        tint = MaterialTheme.colorScheme.error
+                    )
+                    Spacer(modifier = Modifier.height(16.dp))
+                    Text(
+                        errorMessage ?: "Error desconocido",
+                        color = MaterialTheme.colorScheme.error,
+                        textAlign = androidx.compose.ui.text.style.TextAlign.Center
+                    )
+                    Spacer(modifier = Modifier.height(16.dp))
+                    Button(onClick = { bookViewModel.loadAllBooks() }) {
+                        Text("Reintentar")
+                    }
+                }
+            }
+            // Mostrar resultados de búsqueda o lista completa
+            else {
+                val booksToShow = if (isSearching) searchResults else allBooks
+
+                if (booksToShow.isEmpty()) {
+                    Box(
+                        modifier = Modifier.fillMaxSize(),
+                        contentAlignment = Alignment.Center
                     ) {
-                        categories.forEach { category ->
-                            DropdownMenuItem(
-                                text = { Text(category) },
+                        Column(horizontalAlignment = Alignment.CenterHorizontally) {
+                            Icon(
+                                Icons.Default.Info,
+                                contentDescription = null,
+                                modifier = Modifier.size(64.dp),
+                                tint = MaterialTheme.colorScheme.onSurfaceVariant
+                            )
+                            Spacer(modifier = Modifier.height(16.dp))
+                            Text(
+                                if (isSearching) "No se encontraron libros" else "No hay libros disponibles",
+                                color = MaterialTheme.colorScheme.onSurfaceVariant
+                            )
+                        }
+                    }
+                } else {
+                    LazyColumn(
+                        modifier = Modifier.fillMaxSize(),
+                        contentPadding = PaddingValues(16.dp),
+                        verticalArrangement = Arrangement.spacedBy(12.dp)
+                    ) {
+                        items(booksToShow) { book ->
+                            val isFavorite = bookViewModel.isBookInFavorites(book.id ?: 0)
+                            BookCard(
+                                book = book,
+                                isFavorite = isFavorite,
+                                onToggleFavorite = {
+                                    if (isFavorite) {
+                                        // Buscar el favorito y eliminarlo
+                                        val favorite = favoriteBooks.find { it.bookId == book.id }
+                                        favorite?.id?.let { bookViewModel.removeFromFavorites(it) }
+                                    } else {
+                                        bookViewModel.addToFavorites(book)
+                                    }
+                                },
                                 onClick = {
-                                    selectedCategory = category
-                                    expanded = false
+                                    book.id?.let { onNavigateToBookDetail(it) }
                                 }
                             )
                         }
                     }
                 }
             }
-        },
-        confirmButton = {
-            Button(
-                onClick = {
-                    if (title.isNotBlank() && author.isNotBlank()) {
-                        onConfirm(title, author, selectedCategory)
-                    }
-                },
-                enabled = title.isNotBlank() && author.isNotBlank()
+        }
+    }
+}
+
+@Composable
+fun BookCard(
+    book: Book,
+    isFavorite: Boolean,
+    onToggleFavorite: () -> Unit,
+    onClick: () -> Unit
+) {
+    Card(
+        modifier = Modifier
+            .fillMaxWidth()
+            .clickable(onClick = onClick),
+        elevation = CardDefaults.cardElevation(defaultElevation = 2.dp)
+    ) {
+        Row(
+            modifier = Modifier
+                .fillMaxWidth()
+                .padding(16.dp),
+            verticalAlignment = Alignment.CenterVertically
+        ) {
+            // Icono del libro por categoría
+            Box(
+                modifier = Modifier
+                    .size(70.dp)
+                    .background(
+                        when (book.category) {
+                            "Manga" -> Color(0xFFE3F2FD)
+                            "Manhwa" -> Color(0xFFFCE4EC)
+                            "Donghua" -> Color(0xFFFFF9C4)
+                            else -> Color(0xFFF5F5F5)
+                        },
+                        shape = MaterialTheme.shapes.medium
+                    ),
+                contentAlignment = Alignment.Center
             ) {
-                Text("Agregar")
+                Icon(
+                    imageVector = when (book.category) {
+                        "Manga" -> Icons.Default.Place
+                        "Manhwa" -> Icons.Default.Edit
+                        "Donghua" -> Icons.Default.Star
+                        else -> Icons.Default.Info
+                    },
+                    contentDescription = null,
+                    modifier = Modifier.size(36.dp),
+                    tint = when (book.category) {
+                        "Manga" -> Color(0xFF1976D2)
+                        "Manhwa" -> Color(0xFFC2185B)
+                        "Donghua" -> Color(0xFFF57C00)
+                        else -> Color(0xFF757575)
+                    }
+                )
             }
-        },
-        dismissButton = {
-            TextButton(onClick = onDismiss) {
-                Text("Cancelar")
+
+            Spacer(modifier = Modifier.width(16.dp))
+
+            // Info del libro
+            Column(modifier = Modifier.weight(1f)) {
+                Text(
+                    text = book.title,
+                    fontWeight = FontWeight.Bold,
+                    fontSize = 16.sp
+                )
+                Spacer(modifier = Modifier.height(4.dp))
+                Text(
+                    text = book.author,
+                    fontSize = 14.sp,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant
+                )
+                Spacer(modifier = Modifier.height(4.dp))
+                Surface(
+                    shape = MaterialTheme.shapes.small,
+                    color = MaterialTheme.colorScheme.secondaryContainer
+                ) {
+                    Text(
+                        text = book.category,
+                        modifier = Modifier.padding(horizontal = 8.dp, vertical = 4.dp),
+                        fontSize = 12.sp,
+                        color = MaterialTheme.colorScheme.onSecondaryContainer
+                    )
+                }
+            }
+
+            // Botón de favorito
+            IconButton(
+                onClick = onToggleFavorite
+            ) {
+                Icon(
+                    imageVector = if (isFavorite) Icons.Default.Favorite else Icons.Default.FavoriteBorder,
+                    contentDescription = if (isFavorite) "Quitar de favoritos" else "Agregar a favoritos",
+                    tint = if (isFavorite) Color.Red else MaterialTheme.colorScheme.onSurfaceVariant
+                )
             }
         }
-    )
+    }
 }
+

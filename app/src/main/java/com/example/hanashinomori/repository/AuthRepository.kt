@@ -1,170 +1,158 @@
 package com.example.hanashinomori.repository
 
 import android.util.Log
-import com.example.hanashinomori.api.ApiService
-import com.example.hanashinomori.dao.UserDao
 import com.example.hanashinomori.dto.LoginRequest
 import com.example.hanashinomori.dto.RegisterRequest
-import com.example.hanashinomori.entity.User
 import com.example.hanashinomori.network.RetrofitProvider
 
-class AuthRepository(private val userDao: UserDao) {
+data class UserSession(
+    val userId: Long,
+    val username: String,
+    val email: String,
+    val token: String? = null
+)
 
-    private val apiService: ApiService = RetrofitProvider.apiService
+class AuthRepository {
+    private val TAG = "AuthRepository"
+    private val apiService = RetrofitProvider.apiService
+
+    // Session management (in-memory)
+    private var currentSession: UserSession? = null
+
+    fun getCurrentSession(): UserSession? = currentSession
+
+    fun isLoggedIn(): Boolean = currentSession != null
+
+    fun logout() {
+        currentSession = null
+        Log.d(TAG, "🚪 Sesión cerrada")
+    }
 
     /**
-     * Registro usando BACKEND (Spring Boot)
+     * Registro usando BACKEND
      */
-    suspend fun register(username: String, email: String, password: String): Result<User> {
+    suspend fun register(username: String, email: String, password: String): Result<UserSession> {
         return try {
-            Log.d("AuthRepository", "=== INTENTANDO REGISTRO ===")
-            Log.d("AuthRepository", "Username: $username")
-            Log.d("AuthRepository", "Email: $email")
-            
-            // Crear request
+            Log.d(TAG, "=== INTENTANDO REGISTRO ===")
+            Log.d(TAG, "Username: $username")
+            Log.d(TAG, "Email: $email")
+
             val request = RegisterRequest(
                 username = username,
                 email = email,
                 password = password
             )
-            
-            Log.d("AuthRepository", "Request creado: $request")
-            Log.d("AuthRepository", "Enviando a backend...")
-            
-            // Llamar al backend
+
+            Log.d(TAG, "Enviando a backend...")
             val response = apiService.register(request)
-            
-            Log.d("AuthRepository", "Response code: ${response.code()}")
+
+            Log.d(TAG, "Response code: ${response.code()}")
 
             if (response.isSuccessful && response.body()?.success == true) {
-                val registerResponse = response.body()!!
+                val body = response.body()!!
 
-                // Obtener userId desde data o desde el campo directo
-                val userId = registerResponse.data?.userId ?: registerResponse.userId ?: 0
-                val responseUsername = registerResponse.data?.username ?: registerResponse.username ?: username
-                val responseEmail = registerResponse.data?.email ?: registerResponse.email ?: email
+                Log.d(TAG, "📦 Response body completo: $body")
+                Log.d(TAG, "📦 body.data: ${body.data}")
+                Log.d(TAG, "📦 body.data?.userId: ${body.data?.userId}")
+                Log.d(TAG, "📦 body.userId: ${body.userId}")
 
-                Log.d("AuthRepository", "✅ REGISTRO EXITOSO - userId: $userId")
+                val userId = body.data?.userId ?: body.userId ?: 0L
+                val responseUsername = body.data?.username ?: body.username ?: username
+                val responseEmail = body.data?.email ?: body.email ?: email
+                val token = body.data?.token ?: body.token
 
-                // Crear user local (opcional, para cache)
-                val user = User(
-                    id = userId,
+                Log.d(TAG, "✅ REGISTRO EXITOSO - userId: $userId")
+
+                // Validar que userId no sea 0
+                if (userId == 0L) {
+                    Log.e(TAG, "❌ ERROR CRÍTICO: userId es 0 - El backend no devolvió userId válido")
+                    return Result.failure(Exception("Error: No se pudo obtener ID de usuario del servidor"))
+                }
+
+                val session = UserSession(
+                    userId = userId,
                     username = responseUsername,
                     email = responseEmail,
-                    password = password
+                    token = token
                 )
-                
-                // Guardar en BD local como cache
-                try {
-                    userDao.insert(user)
-                    Log.d("AuthRepository", "Usuario guardado en BD local como cache")
-                } catch (e: Exception) {
-                    Log.w("AuthRepository", "No se pudo guardar en BD local: ${e.message}")
-                }
-                
-                Result.success(user)
+
+                // Guardar sesión
+                currentSession = session
+
+                Result.success(session)
             } else {
-                // Leer el mensaje de error del backend
-                val errorMsg = if (response.body()?.success == false) {
-                    // Si hay body con success=false, usar ese mensaje
-                    response.body()?.message ?: "Error en el registro"
-                } else {
-                    // Si no hay body, leer errorBody
-                    try {
-                        val errorBody = response.errorBody()?.string()
-                        Log.d("AuthRepository", "Error body: $errorBody")
-
-                        // Intentar parsear el JSON de error
-                        if (errorBody?.contains("\"message\"") == true) {
-                            val messageRegex = "\"message\"\\s*:\\s*\"([^\"]+)\"".toRegex()
-                            messageRegex.find(errorBody)?.groupValues?.get(1) ?: "Error en el registro"
-                        } else {
-                            "Error en el registro"
-                        }
-                    } catch (e: Exception) {
-                        "Error en el registro"
-                    }
-                }
-
-                Log.e("AuthRepository", "❌ ERROR: $errorMsg")
+                val errorMsg = response.body()?.message ?: "Error en el registro"
+                Log.e(TAG, "❌ ERROR: $errorMsg")
                 Result.failure(Exception(errorMsg))
             }
         } catch (e: Exception) {
-            Log.e("AuthRepository", "❌ EXCEPCIÓN en registro: ${e.message}", e)
-            Result.failure(Exception("Error de conexión: ${e.message}"))
+            Log.e(TAG, "❌ EXCEPCIÓN en register: ${e.message}")
+            e.printStackTrace()
+            Result.failure(e)
         }
     }
 
     /**
-     * Login usando BACKEND (Spring Boot)
+     * Login usando BACKEND
      */
-    suspend fun login(username: String, password: String): Result<User> {
+    suspend fun login(usernameOrEmail: String, password: String): Result<UserSession> {
         return try {
-            Log.d("AuthRepository", "=== INTENTANDO LOGIN ===")
-            Log.d("AuthRepository", "Username: $username")
-            
-            // Crear request
+            Log.d(TAG, "=== INTENTANDO LOGIN ===")
+            Log.d(TAG, "UsernameOrEmail: $usernameOrEmail")
+
             val request = LoginRequest(
-                username = username,
+                usernameOrEmail = usernameOrEmail,
                 password = password
             )
-            
-            Log.d("AuthRepository", "Enviando a backend...")
-            
-            // Llamar al backend
+
+            Log.d(TAG, "Enviando a backend...")
             val response = apiService.login(request)
-            
-            Log.d("AuthRepository", "Response code: ${response.code()}")
-            
+
+            Log.d(TAG, "Response code: ${response.code()}")
+
             if (response.isSuccessful && response.body()?.success == true) {
-                val loginResponse = response.body()!!
+                val body = response.body()!!
 
-                // Obtener datos desde data o desde campos directos
-                val userId = loginResponse.data?.userId ?: loginResponse.userId ?: 0
-                val responseUsername = loginResponse.data?.username ?: loginResponse.username ?: username
-                val responseEmail = loginResponse.data?.email ?: loginResponse.email ?: ""
+                Log.d(TAG, "📦 Response body completo: $body")
+                Log.d(TAG, "📦 body.data: ${body.data}")
+                Log.d(TAG, "📦 body.data?.userId: ${body.data?.userId}")
+                Log.d(TAG, "📦 body.userId: ${body.userId}")
 
-                Log.d("AuthRepository", "✅ LOGIN EXITOSO - userId: $userId")
+                val userId = body.data?.userId ?: body.userId ?: 0L
+                val username = body.data?.username ?: body.username ?: usernameOrEmail
+                val email = body.data?.email ?: body.email ?: ""
+                val token = body.data?.token ?: body.token
 
-                // Crear user local
-                val user = User(
-                    id = userId,
-                    username = responseUsername,
-                    email = responseEmail,
-                    password = password
-                )
-                
-                Result.success(user)
-            } else {
-                // Leer el mensaje de error del backend
-                val errorMsg = if (response.body()?.success == false) {
-                    // Si hay body con success=false, usar ese mensaje
-                    response.body()?.message ?: "Usuario o contraseña incorrectos"
-                } else {
-                    // Si no hay body, leer errorBody
-                    try {
-                        val errorBody = response.errorBody()?.string()
-                        Log.d("AuthRepository", "Error body: $errorBody")
+                Log.d(TAG, "✅ LOGIN EXITOSO - userId: $userId")
 
-                        // Intentar parsear el JSON de error
-                        if (errorBody?.contains("\"message\"") == true) {
-                            val messageRegex = "\"message\"\\s*:\\s*\"([^\"]+)\"".toRegex()
-                            messageRegex.find(errorBody)?.groupValues?.get(1) ?: "Usuario o contraseña incorrectos"
-                        } else {
-                            "Usuario o contraseña incorrectos"
-                        }
-                    } catch (e: Exception) {
-                        "Usuario o contraseña incorrectos"
-                    }
+                // Validar que userId no sea 0
+                if (userId == 0L) {
+                    Log.e(TAG, "❌ ERROR CRÍTICO: userId es 0 - El backend no devolvió userId válido")
+                    return Result.failure(Exception("Error: No se pudo obtener ID de usuario del servidor"))
                 }
 
-                Log.e("AuthRepository", "❌ ERROR: $errorMsg")
+                val session = UserSession(
+                    userId = userId,
+                    username = username,
+                    email = email,
+                    token = token
+                )
+
+                // Guardar sesión
+                currentSession = session
+
+                Result.success(session)
+            } else {
+                val errorMsg = response.body()?.message ?: "Credenciales incorrectas"
+                Log.e(TAG, "❌ ERROR: $errorMsg")
                 Result.failure(Exception(errorMsg))
             }
         } catch (e: Exception) {
-            Log.e("AuthRepository", "❌ EXCEPCIÓN en login: ${e.message}", e)
-            Result.failure(Exception("Error de conexión: ${e.message}"))
+            Log.e(TAG, "❌ EXCEPCIÓN en login: ${e.message}")
+            e.printStackTrace()
+            Result.failure(e)
         }
     }
 }
+
 

@@ -1,6 +1,7 @@
 package com.example.hanashinomori.view
 
 import androidx.compose.foundation.background
+import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
@@ -16,25 +17,46 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
-import com.example.hanashinomori.controller.MediaViewModel
-import com.example.hanashinomori.entity.MediaItem
+import com.example.hanashinomori.controller.BookViewModel
+import com.example.hanashinomori.model.Favorite
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun LibraryScreen(
-    mediaViewModel: MediaViewModel,
+    bookViewModel: BookViewModel,
     onNavigateBack: () -> Unit,
     onNavigateToQrScanner: () -> Unit,
+    onNavigateToBookDetail: (Long) -> Unit,
     scannedQrValue: String
 ) {
-    val myLibrary by mediaViewModel.myLibrary.collectAsState()
-    var showQrResult by remember { mutableStateOf(false) }
+    val favoriteBooks by bookViewModel.favoriteBooks.collectAsState()
+    val isLoading by bookViewModel.isLoading.collectAsState()
+    val errorMessage by bookViewModel.errorMessage.collectAsState()
 
-    // Mostrar resultado cuando hay un nuevo valor escaneado
+    var showDeleteDialog by remember { mutableStateOf<Favorite?>(null) }
+    var qrResultMessage by remember { mutableStateOf<String?>(null) }
+    var showQrDialog by remember { mutableStateOf(false) }
+
+    // Procesar QR escaneado
     LaunchedEffect(scannedQrValue) {
         if (scannedQrValue.isNotEmpty()) {
-            showQrResult = true
+            bookViewModel.addFavoriteByQr(
+                qrValue = scannedQrValue,
+                onSuccess = { message ->
+                    qrResultMessage = message
+                    showQrDialog = true
+                },
+                onError = { error ->
+                    qrResultMessage = "❌ $error"
+                    showQrDialog = true
+                }
+            )
         }
+    }
+
+    // Cargar favoritos al inicio
+    LaunchedEffect(Unit) {
+        bookViewModel.loadUserFavorites()
     }
 
     Scaffold(
@@ -63,83 +85,151 @@ fun LibraryScreen(
             }
         }
     ) { padding ->
-        if (myLibrary.isEmpty()) {
-            Box(
-                modifier = Modifier
-                    .fillMaxSize()
-                    .padding(padding),
-                contentAlignment = Alignment.Center
-            ) {
-                Column(
-                    horizontalAlignment = Alignment.CenterHorizontally,
-                    modifier = Modifier.padding(32.dp)
-                ) {
-                    Icon(
-                        imageVector = Icons.AutoMirrored.Filled.List,
-                        contentDescription = null,
-                        modifier = Modifier.size(80.dp),
-                        tint = MaterialTheme.colorScheme.onSurfaceVariant
-                    )
-                    Spacer(modifier = Modifier.height(16.dp))
-                    Text(
-                        "Tu biblioteca está vacía",
-                        fontSize = 20.sp,
-                        fontWeight = FontWeight.Bold,
-                        color = MaterialTheme.colorScheme.onSurfaceVariant
-                    )
-                    Spacer(modifier = Modifier.height(8.dp))
-                    Text(
-                        "Agrega libros desde la pantalla principal usando el ❤️",
-                        fontSize = 14.sp,
-                        color = MaterialTheme.colorScheme.onSurfaceVariant
-                    )
-                }
-            }
-        } else {
-            LazyColumn(
-                modifier = Modifier
-                    .fillMaxSize()
-                    .padding(padding)
-                    .padding(16.dp),
-                verticalArrangement = Arrangement.spacedBy(12.dp)
-            ) {
-                item {
-                    Text(
-                        "Tienes ${myLibrary.size} ${if (myLibrary.size == 1) "elemento" else "elementos"}",
-                        fontSize = 20.sp,
-                        fontWeight = FontWeight.Bold,
-                        modifier = Modifier.padding(bottom = 8.dp)
-                    )
+        Box(modifier = Modifier.padding(padding)) {
+            when {
+                isLoading -> {
+                    Box(
+                        modifier = Modifier.fillMaxSize(),
+                        contentAlignment = Alignment.Center
+                    ) {
+                        CircularProgressIndicator()
+                    }
                 }
 
-                items(myLibrary) { item ->
-                    LibraryItemCard(
-                        mediaItem = item,
-                        onToggleRead = { mediaViewModel.toggleRead(item) }
-                    )
+                errorMessage != null -> {
+                    Column(
+                        modifier = Modifier
+                            .fillMaxSize()
+                            .padding(32.dp),
+                        horizontalAlignment = Alignment.CenterHorizontally,
+                        verticalArrangement = Arrangement.Center
+                    ) {
+                        Icon(
+                            Icons.Default.Warning,
+                            contentDescription = null,
+                            modifier = Modifier.size(64.dp),
+                            tint = MaterialTheme.colorScheme.error
+                        )
+                        Spacer(modifier = Modifier.height(16.dp))
+                        Text(
+                            errorMessage ?: "Error desconocido",
+                            color = MaterialTheme.colorScheme.error,
+                            textAlign = androidx.compose.ui.text.style.TextAlign.Center
+                        )
+                        Spacer(modifier = Modifier.height(16.dp))
+                        Button(onClick = { bookViewModel.loadUserFavorites() }) {
+                            Text("Reintentar")
+                        }
+                    }
+                }
+
+                favoriteBooks.isEmpty() -> {
+                    Box(
+                        modifier = Modifier.fillMaxSize(),
+                        contentAlignment = Alignment.Center
+                    ) {
+                        Column(
+                            horizontalAlignment = Alignment.CenterHorizontally,
+                            modifier = Modifier.padding(32.dp)
+                        ) {
+                            Icon(
+                                imageVector = Icons.AutoMirrored.Filled.List,
+                                contentDescription = null,
+                                modifier = Modifier.size(80.dp),
+                                tint = MaterialTheme.colorScheme.onSurfaceVariant
+                            )
+                            Spacer(modifier = Modifier.height(16.dp))
+                            Text(
+                                "Tu biblioteca está vacía",
+                                fontSize = 20.sp,
+                                fontWeight = FontWeight.Bold,
+                                color = MaterialTheme.colorScheme.onSurfaceVariant
+                            )
+                            Spacer(modifier = Modifier.height(8.dp))
+                            Text(
+                                "Agrega libros desde la pantalla principal usando el ❤️",
+                                fontSize = 14.sp,
+                                color = MaterialTheme.colorScheme.onSurfaceVariant,
+                                textAlign = androidx.compose.ui.text.style.TextAlign.Center
+                            )
+                        }
+                    }
+                }
+
+                else -> {
+                    LazyColumn(
+                        modifier = Modifier.fillMaxSize().padding(16.dp),
+                        verticalArrangement = Arrangement.spacedBy(12.dp)
+                    ) {
+                        item {
+                            Text(
+                                "Tienes ${favoriteBooks.size} ${if (favoriteBooks.size == 1) "elemento" else "elementos"}",
+                                fontSize = 20.sp,
+                                fontWeight = FontWeight.Bold,
+                                modifier = Modifier.padding(bottom = 8.dp)
+                            )
+                        }
+
+                        items(favoriteBooks) { favorite ->
+                            FavoriteItemCard(
+                                favorite = favorite,
+                                onToggleRead = {
+                                    bookViewModel.toggleReadStatus(favorite)
+                                },
+                                onDelete = {
+                                    showDeleteDialog = favorite
+                                },
+                                onClick = {
+                                    onNavigateToBookDetail(favorite.bookId)
+                                }
+                            )
+                        }
+                    }
                 }
             }
         }
 
-        // Diálogo para mostrar resultado del QR
-        if (showQrResult && scannedQrValue.isNotEmpty()) {
+        // Diálogo de confirmación para eliminar
+        showDeleteDialog?.let { favorite ->
             AlertDialog(
-                onDismissRequest = { showQrResult = false },
-                title = { Text("QR Escaneado") },
+                onDismissRequest = { showDeleteDialog = null },
+                title = { Text("Eliminar de Favoritos") },
                 text = {
-                    Column {
-                        Text("Contenido del QR:")
-                        Spacer(modifier = Modifier.height(8.dp))
-                        Text(
-                            text = scannedQrValue,
-                            fontWeight = FontWeight.Bold,
-                            color = MaterialTheme.colorScheme.primary
-                        )
-                    }
+                    Text("¿Estás seguro de que deseas eliminar '${favorite.book.title}' de tus favoritos?")
                 },
                 confirmButton = {
-                    TextButton(onClick = { showQrResult = false }) {
-                        Text("Cerrar")
+                    TextButton(
+                        onClick = {
+                            favorite.id?.let { bookViewModel.removeFromFavorites(it) }
+                            showDeleteDialog = null
+                        }
+                    ) {
+                        Text("Eliminar", color = MaterialTheme.colorScheme.error)
+                    }
+                },
+                dismissButton = {
+                    TextButton(onClick = { showDeleteDialog = null }) {
+                        Text("Cancelar")
+                    }
+                }
+            )
+        }
+
+        // Diálogo para mostrar resultado del QR
+        if (showQrDialog && qrResultMessage != null) {
+            AlertDialog(
+                onDismissRequest = {
+                    showQrDialog = false
+                    qrResultMessage = null
+                },
+                title = { Text("Resultado QR") },
+                text = { Text(qrResultMessage ?: "") },
+                confirmButton = {
+                    TextButton(onClick = {
+                        showQrDialog = false
+                        qrResultMessage = null
+                    }) {
+                        Text("Aceptar")
                     }
                 }
             )
@@ -148,12 +238,16 @@ fun LibraryScreen(
 }
 
 @Composable
-fun LibraryItemCard(
-    mediaItem: MediaItem,
-    onToggleRead: () -> Unit
+fun FavoriteItemCard(
+    favorite: Favorite,
+    onToggleRead: () -> Unit,
+    onDelete: () -> Unit,
+    onClick: () -> Unit
 ) {
     Card(
-        modifier = Modifier.fillMaxWidth(),
+        modifier = Modifier
+            .fillMaxWidth()
+            .clickable(onClick = onClick),
         elevation = CardDefaults.cardElevation(defaultElevation = 2.dp)
     ) {
         Row(
@@ -162,6 +256,7 @@ fun LibraryItemCard(
                 .padding(16.dp),
             verticalAlignment = Alignment.CenterVertically
         ) {
+            // Icono del libro por categoría
             Box(
                 modifier = Modifier
                     .size(60.dp)
@@ -172,7 +267,7 @@ fun LibraryItemCard(
                 contentAlignment = Alignment.Center
             ) {
                 Icon(
-                    imageVector = when (mediaItem.category) {
+                    imageVector = when (favorite.book.category) {
                         "Manga" -> Icons.Default.Place
                         "Manhwa" -> Icons.Default.Edit
                         "Donghua" -> Icons.Default.Star
@@ -186,14 +281,15 @@ fun LibraryItemCard(
 
             Spacer(modifier = Modifier.width(16.dp))
 
+            // Info del libro
             Column(modifier = Modifier.weight(1f)) {
                 Text(
-                    text = mediaItem.title,
+                    text = favorite.book.title,
                     fontWeight = FontWeight.Bold,
                     fontSize = 16.sp
                 )
                 Text(
-                    text = mediaItem.author,
+                    text = favorite.book.author,
                     fontSize = 14.sp,
                     color = MaterialTheme.colorScheme.onSurfaceVariant
                 )
@@ -202,11 +298,11 @@ fun LibraryItemCard(
                     horizontalArrangement = Arrangement.spacedBy(8.dp)
                 ) {
                     Text(
-                        text = mediaItem.category,
+                        text = favorite.book.category,
                         fontSize = 12.sp,
                         color = MaterialTheme.colorScheme.primary
                     )
-                    if (mediaItem.isRead) {
+                    if (favorite.isRead) {
                         Text(
                             text = "• Leído",
                             fontSize = 12.sp,
@@ -224,20 +320,30 @@ fun LibraryItemCard(
                 }
             }
 
+            // Botón de marcar como leído
             IconButton(onClick = onToggleRead) {
                 Icon(
-                    imageVector = if (mediaItem.isRead)
+                    imageVector = if (favorite.isRead)
                         Icons.Default.CheckCircle
                     else
                         Icons.Default.Check,
-                    contentDescription = if (mediaItem.isRead)
+                    contentDescription = if (favorite.isRead)
                         "Marcar como no leído"
                     else
                         "Marcar como leído",
-                    tint = if (mediaItem.isRead)
+                    tint = if (favorite.isRead)
                         Color.Green
                     else
                         MaterialTheme.colorScheme.onSurfaceVariant
+                )
+            }
+
+            // Botón de eliminar
+            IconButton(onClick = onDelete) {
+                Icon(
+                    imageVector = Icons.Default.Delete,
+                    contentDescription = "Eliminar de favoritos",
+                    tint = MaterialTheme.colorScheme.error
                 )
             }
         }

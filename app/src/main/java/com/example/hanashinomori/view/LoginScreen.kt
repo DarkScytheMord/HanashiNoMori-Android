@@ -16,19 +16,19 @@ import com.example.hanashinomori.model.AuthState
 
 @Composable
 fun LoginScreen(
-    authViewModel: AuthViewModel,
+    authViewModel: com.example.hanashinomori.controller.AuthViewModel,
     onNavigateToRegister: () -> Unit,
-    onLoginSuccess: (String) -> Unit
+    onLoginSuccess: (Long) -> Unit
 ) {
     var username by remember { mutableStateOf("") }
     var password by remember { mutableStateOf("") }
     val authState by authViewModel.authState.collectAsState()
+    val currentUser by authViewModel.currentUser.collectAsState()
 
     LaunchedEffect(authState) {
-        if (authState is AuthState.Success) {
-            val successState = authState as AuthState.Success
-            onLoginSuccess(successState.username)
-            authViewModel.resetState()
+        if (authState is AuthState.Authenticated && currentUser != null) {
+            onLoginSuccess(currentUser!!.userId)
+            authViewModel.clearError()
         }
     }
 
