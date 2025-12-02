@@ -83,4 +83,6 @@ dependencies {
     implementation("com.google.mlkit:barcode-scanning:17.2.0")
     // Coil para cargar imágenes desde URL
     implementation("io.coil-kt:coil-compose:2.5.0")
+    implementation("androidx.compose.material3:material3:1.2.0")
+
 }

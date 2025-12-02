@@ -9,7 +9,8 @@ data class UserSession(
     val userId: Long,
     val username: String,
     val email: String,
-    val token: String? = null
+    val token: String? = null,
+    val isAdmin: Boolean = false
 )
 
 class AuthRepository {
@@ -60,8 +61,9 @@ class AuthRepository {
                 val responseUsername = body.data?.username ?: body.username ?: username
                 val responseEmail = body.data?.email ?: body.email ?: email
                 val token = body.data?.token ?: body.token
+                val isAdmin = body.data?.isAdmin ?: false
 
-                Log.d(TAG, "✅ REGISTRO EXITOSO - userId: $userId")
+                Log.d(TAG, "✅ REGISTRO EXITOSO - userId: $userId, isAdmin: $isAdmin")
 
                 // Validar que userId no sea 0
                 if (userId == 0L) {
@@ -73,7 +75,8 @@ class AuthRepository {
                     userId = userId,
                     username = responseUsername,
                     email = responseEmail,
-                    token = token
+                    token = token,
+                    isAdmin = isAdmin
                 )
 
                 // Guardar sesión
@@ -122,8 +125,9 @@ class AuthRepository {
                 val username = body.data?.username ?: body.username ?: usernameOrEmail
                 val email = body.data?.email ?: body.email ?: ""
                 val token = body.data?.token ?: body.token
+                val isAdmin = body.data?.isAdmin ?: false
 
-                Log.d(TAG, "✅ LOGIN EXITOSO - userId: $userId")
+                Log.d(TAG, "✅ LOGIN EXITOSO - userId: $userId, isAdmin: $isAdmin")
 
                 // Validar que userId no sea 0
                 if (userId == 0L) {
@@ -135,7 +139,8 @@ class AuthRepository {
                     userId = userId,
                     username = username,
                     email = email,
-                    token = token
+                    token = token,
+                    isAdmin = isAdmin
                 )
 
                 // Guardar sesión

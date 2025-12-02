@@ -81,12 +81,16 @@ fun AppNavigation(
         composable("home") {
             HomeScreen(
                 username = currentUser?.username ?: "",
+                isAdmin = currentUser?.isAdmin ?: false,
                 bookViewModel = bookViewModel,
                 onNavigateToLibrary = {
                     navController.navigate("library")
                 },
                 onNavigateToBookDetail = { bookId ->
                     navController.navigate("book_detail/$bookId")
+                },
+                onNavigateToAdmin = {
+                    navController.navigate("admin_dashboard")
                 },
                 onLogout = {
                     authViewModel.logout()
@@ -109,7 +113,11 @@ fun AppNavigation(
                 onNavigateToBookDetail = { bookId ->
                     navController.navigate("book_detail/$bookId")
                 },
-                scannedQrValue = scannedQrValue
+                scannedQrValue = scannedQrValue,
+                onQrValueProcessed = {
+                    // 🔧 LIMPIAR el valor del QR después de procesarlo
+                    scannedQrValue = ""
+                }
             )
         }
 
@@ -127,12 +135,68 @@ fun AppNavigation(
         }
 
         composable("qr_scanner") {
+            // 🔧 CORRECCIÓN: Limpiar el valor del QR al entrar al escáner
+            LaunchedEffect(Unit) {
+                scannedQrValue = ""
+            }
+
             QrScannerScreen(
                 onQrScanned = { qrValue ->
-                    scannedQrValue = qrValue
-                    navController.popBackStack()
+                    // Solo procesar si no está vacío y es diferente al anterior
+                    if (qrValue.isNotBlank() && qrValue != scannedQrValue) {
+                        scannedQrValue = qrValue
+                        navController.popBackStack()
+                    }
                 },
                 onClose = {
+                    navController.popBackStack()
+                }
+            )
+        }
+
+        // ADMIN ROUTES
+        composable("admin_dashboard") {
+            com.example.hanashinomori.view.AdminDashboardScreen(
+                onNavigateBack = {
+                    navController.popBackStack()
+                },
+                onNavigateToUserManagement = {
+                    navController.navigate("admin_users")
+                },
+                onNavigateToBookManagement = {
+                    navController.navigate("admin_books")
+                }
+            )
+        }
+
+        composable("admin_users") {
+            val userId = currentUser?.userId ?: 0L
+            android.util.Log.d("MainActivity", "🔑 Creando AdminViewModel con userId: $userId")
+            android.util.Log.d("MainActivity", "👤 currentUser: ${currentUser?.username}, isAdmin: ${currentUser?.isAdmin}")
+
+            val adminViewModel = remember(userId) {
+                com.example.hanashinomori.controller.AdminViewModel(userId)
+            }
+            com.example.hanashinomori.view.UserManagementScreen(
+                adminViewModel = adminViewModel,
+                onNavigateBack = {
+                    navController.popBackStack()
+                }
+            )
+        }
+
+        composable("admin_books") {
+            val userId = currentUser?.userId ?: 0L
+            android.util.Log.d("MainActivity", "🔑 Creando AdminViewModel con userId: $userId")
+            android.util.Log.d("MainActivity", "👤 currentUser: ${currentUser?.username}, isAdmin: ${currentUser?.isAdmin}")
+
+            val adminViewModel = remember(userId) {
+                com.example.hanashinomori.controller.AdminViewModel(userId)
+            }
+            com.example.hanashinomori.view.BookManagementScreen(
+                adminViewModel = adminViewModel,
+                bookViewModel = bookViewModel,
+                onNavigateBack = {
                     navController.popBackStack()
                 }
             )

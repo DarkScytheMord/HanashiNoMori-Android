@@ -50,5 +50,54 @@ interface ApiService {
         @Path("userId") userId: Long,
         @Path("bookId") bookId: Long
     ): Response<FavoriteResponse>
+
+    // ADMIN - USER MANAGEMENT ENDPOINTS
+    @GET("api/admin/users")
+    suspend fun getAllUsers(@Query("adminUserId") adminUserId: Long): Response<UsersListResponse>
+
+    @GET("api/admin/users/{userId}")
+    suspend fun getUserById(
+        @Path("userId") userId: Long,
+        @Query("adminUserId") adminUserId: Long
+    ): Response<UserResponse>
+
+    @POST("api/admin/users")
+    suspend fun createUser(
+        @Body request: CreateUserRequest,
+        @Query("adminUserId") adminUserId: Long
+    ): Response<UserResponse>
+
+    @PUT("api/admin/users/{userId}")
+    suspend fun updateUser(
+        @Path("userId") userId: Long,
+        @Body request: UpdateUserRequest,
+        @Query("adminUserId") adminUserId: Long
+    ): Response<UserResponse>
+
+    @DELETE("api/admin/users/{userId}")
+    suspend fun deleteUser(
+        @Path("userId") userId: Long,
+        @Query("adminUserId") adminUserId: Long
+    ): Response<DeleteResponse>
+
+    // ADMIN - BOOK MANAGEMENT ENDPOINTS
+    @POST("api/admin/books")
+    suspend fun adminCreateBook(
+        @Body request: CreateBookRequest,
+        @Query("adminUserId") adminUserId: Long
+    ): Response<BookResponse>
+
+    @PUT("api/admin/books/{bookId}")
+    suspend fun updateBook(
+        @Path("bookId") bookId: Long,
+        @Body request: UpdateBookRequest,
+        @Query("adminUserId") adminUserId: Long
+    ): Response<BookResponse>
+
+    @DELETE("api/admin/books/{bookId}")
+    suspend fun deleteBook(
+        @Path("bookId") bookId: Long,
+        @Query("adminUserId") adminUserId: Long
+    ): Response<DeleteResponse>
 }
 

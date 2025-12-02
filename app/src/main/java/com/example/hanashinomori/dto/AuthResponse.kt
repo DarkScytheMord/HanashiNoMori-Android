@@ -21,6 +21,7 @@ data class UserData(
     val userId: Long? = null,
     val username: String? = null,
     val email: String? = null,
-    val token: String? = null
+    val token: String? = null,
+    val isAdmin: Boolean? = null
 )
 

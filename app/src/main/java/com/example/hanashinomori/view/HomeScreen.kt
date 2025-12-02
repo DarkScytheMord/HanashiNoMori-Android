@@ -24,9 +24,11 @@ import com.example.hanashinomori.model.Book
 @Composable
 fun HomeScreen(
     username: String,
+    isAdmin: Boolean = false,
     bookViewModel: BookViewModel,
     onNavigateToLibrary: () -> Unit,
     onNavigateToBookDetail: (Long) -> Unit,
+    onNavigateToAdmin: () -> Unit = {},
     onLogout: () -> Unit
 ) {
     val allBooks by bookViewModel.allBooks.collectAsState()
@@ -59,6 +61,12 @@ fun HomeScreen(
             TopAppBar(
                 title = { Text("Hanashi No Mori") },
                 actions = {
+                    // Botón de administración (solo para admins)
+                    if (isAdmin) {
+                        IconButton(onClick = onNavigateToAdmin) {
+                            Icon(Icons.Default.Settings, "Administración")
+                        }
+                    }
                     IconButton(onClick = onNavigateToLibrary) {
                         Icon(Icons.Default.Favorite, "Mi Biblioteca")
                     }

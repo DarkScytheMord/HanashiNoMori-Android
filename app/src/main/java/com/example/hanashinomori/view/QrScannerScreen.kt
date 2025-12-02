@@ -12,6 +12,7 @@ import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.unit.dp
 import androidx.core.content.ContextCompat
 
 @OptIn(ExperimentalMaterial3Api::class)
@@ -60,17 +61,36 @@ fun QrScannerScreen(
         Box(
             modifier = Modifier
                 .padding(padding)
-                .fillMaxSize(),
-            contentAlignment = Alignment.Center
+                .fillMaxSize()
         ) {
             if (hasCameraPermission) {
+                // Solo la cámara, sin overlay
                 CameraPreview(
                     onQrScanned = { value ->
-                        onQrScanned(value)   // manda el valor a la pantalla principal
+                        onQrScanned(value)
                     }
                 )
+
             } else {
-                Text("Se necesita permiso de cámara para escanear QR")
+                // Mensaje de permisos
+                Box(
+                    modifier = Modifier.fillMaxSize(),
+                    contentAlignment = Alignment.Center
+                ) {
+                    Column(
+                        horizontalAlignment = Alignment.CenterHorizontally,
+                        verticalArrangement = Arrangement.Center
+                    ) {
+                        Text(
+                            "Se necesita permiso de cámara para escanear QR",
+                            style = MaterialTheme.typography.bodyLarge
+                        )
+                        Spacer(modifier = Modifier.height(16.dp))
+                        Button(onClick = { launcher.launch(Manifest.permission.CAMERA) }) {
+                            Text("Otorgar Permiso")
+                        }
+                    }
+                }
             }
         }
     }

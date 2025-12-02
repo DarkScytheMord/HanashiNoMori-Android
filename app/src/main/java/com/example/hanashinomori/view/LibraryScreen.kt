@@ -27,7 +27,8 @@ fun LibraryScreen(
     onNavigateBack: () -> Unit,
     onNavigateToQrScanner: () -> Unit,
     onNavigateToBookDetail: (Long) -> Unit,
-    scannedQrValue: String
+    scannedQrValue: String,
+    onQrValueProcessed: () -> Unit  // 🔧 NUEVO: Callback para limpiar el QR
 ) {
     val favoriteBooks by bookViewModel.favoriteBooks.collectAsState()
     val isLoading by bookViewModel.isLoading.collectAsState()
@@ -45,10 +46,12 @@ fun LibraryScreen(
                 onSuccess = { message ->
                     qrResultMessage = message
                     showQrDialog = true
+                    onQrValueProcessed()  // 🔧 LIMPIAR después de procesar
                 },
                 onError = { error ->
                     qrResultMessage = "❌ $error"
                     showQrDialog = true
+                    onQrValueProcessed()  // 🔧 LIMPIAR incluso si hay error
                 }
             )
         }
